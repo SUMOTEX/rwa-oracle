@@ -9,7 +9,7 @@ import {
   NavbarItem,
   NavbarMenuItem,
 } from "@nextui-org/navbar";
-import { Button } from "@nextui-org/button";
+
 import { Kbd } from "@nextui-org/kbd";
 import { Link } from "@nextui-org/link";
 import { Input } from "@nextui-org/input";
@@ -18,10 +18,10 @@ import NextLink from "next/link";
 import clsx from "clsx";
 import { siteConfig } from "@/config/site";
 import { UserIcon, SearchIcon, Logo } from "@/components/icons";
-import WalletConnect from '@/components/wallet-connect';
 import { useRouter } from 'next/navigation';
 import { WalletContext } from '@/config/lib/use-connect';
-
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+ 
 export const Navbar = () => {
   const { address, disconnectWallet } = useContext(WalletContext);
   const router = useRouter();
@@ -76,26 +76,7 @@ export const Navbar = () => {
       <NavbarContent
         className="hidden sm:flex basis-1/5 sm:basis-full"
         justify="end">
-        <WalletConnect />
-        {address ? (
-          <Button
-            className="bg-white"
-            variant="solid"
-            startContent={<UserIcon />}
-            onClick={disconnectWallet}
-          >
-            Disconnect
-          </Button>
-        ) : (
-          <Button
-            className="bg-white"
-            variant="solid"
-            startContent={<UserIcon />}
-            onClick={() => router.push("/dashboard.html")}
-          >
-            Login / Register
-          </Button>
-        )}
+          <WalletMultiButton/>
       </NavbarContent>
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
         <NavbarMenuToggle />

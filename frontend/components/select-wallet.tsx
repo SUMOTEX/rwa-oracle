@@ -15,7 +15,7 @@ export default function SelectWallet() {
       {address ? (
         <>
           <p>Connected Address: {address}</p>
-          <p>Balance: {balance} ETH</p>
+          <p>Balance: {balance} SOL</p>
           <button onClick={disconnectWallet}>Disconnect Wallet</button>
         </>
       ) : (

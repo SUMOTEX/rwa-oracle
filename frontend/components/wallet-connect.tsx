@@ -94,7 +94,7 @@ export default function WalletConnect() {
         <div className="relative inline-block">
           <select
             id="network"
-            className="appearance-none w-28 bg-white border border-gray-300 text-gray-600 rounded-md py-1.5 pl-3 pr-8 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+            className="appearance-none w-28 border border-gray-300 text-gray-600 rounded-md py-1.5 pl-3 pr-8 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
             value={selectedNetwork}
             onChange={handleNetworkChange}
           >
@@ -122,7 +122,7 @@ export default function WalletConnect() {
 
       {/* Ethereum and Solana wallet handling */}
       {(selectedNetwork === 'ethereum' && address) || (selectedNetwork === 'solana' && publicKey) ? (
-        <div className="bg-white flex mt-2 items-center gap-0 rounded sm:gap-6 lg:gap-8">
+        <div className=" flex mt-2 items-center gap-0 rounded sm:gap-6 lg:gap-8">
           <div className="relative">
             {/* Display Ethereum Address and Balance */}
             {selectedNetwork === 'ethereum' && address ? (
@@ -130,7 +130,7 @@ export default function WalletConnect() {
                 <span className="rounded-lg px-2 py-1 text-sm tracking-tighter">
                   {formatAddress(address)}
                   <div className="text-center text-sm tracking-tighter text-gray-900 dark:text-white xl:text-md 3xl:mb-8 3xl:text-[24px]">
-                    {Number(balance).toFixed(4)} ETH
+                    {Number(balance).toFixed(4)} SOL
                   </div>
                 </span>
                 <div className="block h-4 w-4 overflow-hidden rounded-full border-3 border-solid border-white bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-main transition-all hover:-translate-y-0.5 hover:shadow-large dark:border-gray-700 sm:h-10 sm:w-10" />

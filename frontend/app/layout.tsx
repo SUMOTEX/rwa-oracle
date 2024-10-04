@@ -20,7 +20,8 @@ import {
 } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
 import "@solana/wallet-adapter-react-ui/styles.css"; // Ensure this is present
-
+import AppWalletProvider from "../components/AppWalletProvider";
+ 
 export default function RootLayout({
   children,
 }: {
@@ -41,11 +42,9 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        {/* Ethereum Wallet Context */}
-        <EthereumWalletProvider>
           {/* Solana Wallet Context */}
           <ConnectionProvider endpoint={endpoint}>
-            <SolanaWalletProvider wallets={solanaWallets} autoConnect>
+            <AppWalletProvider>
               <WalletModalProvider>
                 {/* Theme and UI Providers */}
                 <Providers
@@ -61,9 +60,8 @@ export default function RootLayout({
                   </div>
                 </Providers>
               </WalletModalProvider>
-            </SolanaWalletProvider>
+            </AppWalletProvider>
           </ConnectionProvider>
-        </EthereumWalletProvider>
       </body>
     </html>
   );
