@@ -6,14 +6,14 @@ seeds = false
 skip-lint = false
 
 [programs.devnet]
-oracle_simple = "BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN"
+oracle_simple = "D4cJpMwYznwqVC1dT4ARA5egbAwaxqjbBgsAqWyetymC"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
 cluster = "devnet"
-wallet = "~/.config/solana/id.json"
+wallet = "./target/deploy/new_program-keypair.json"
 
 [scripts]
 test = "../node_modules/.bin/nx run anchor:jest"

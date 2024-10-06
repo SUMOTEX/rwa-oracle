@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/oracle_anchor.json`.
  */
 export type OracleAnchor = {
-  "address": "BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN",
+  "address": "D4cJpMwYznwqVC1dT4ARA5egbAwaxqjbBgsAqWyetymC",
   "metadata": {
     "name": "oracleAnchor",
     "version": "0.1.0",

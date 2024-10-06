@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN");
+declare_id!("D4cJpMwYznwqVC1dT4ARA5egbAwaxqjbBgsAqWyetymC");
 
 #[program]
 pub mod oracle_anchor {
@@ -53,12 +53,15 @@ pub mod oracle_anchor {
     pub fn read_latest_oracle(ctx: Context<ReadOracle>) -> Result<()> {
         let oracle = &ctx.accounts.oracle;
 
-        let latest_entry = oracle.history.last().unwrap();
-
-        msg!("Latest Oracle Details:");
-        msg!("Latest Round ID: {}", latest_entry.round_id);
-        msg!("Latest Asset Value: {}", latest_entry.asset_value);
-        msg!("Latest Timestamp: {}", latest_entry.timestamp);
+        // Check if history exists
+        if let Some(latest_entry) = oracle.history.last() {
+            msg!("Latest Oracle Details:");
+            msg!("Latest Round ID: {}", latest_entry.round_id);
+            msg!("Latest Asset Value: {}", latest_entry.asset_value);
+            msg!("Latest Timestamp: {}", latest_entry.timestamp);
+        } else {
+            msg!("No history found for this Oracle.");
+        }
 
         Ok(())
     }
@@ -89,7 +92,7 @@ pub struct InitializeOracle<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + Oracle::space(5,300), // Space allocation based on verifier count (5 for this example)
+        space = Oracle::space(1, 10), // Adjust verifier_count and history size (e.g., 5 verifiers, 50 history entries)
         seeds = [b"oracle"],
         bump // PDA bump seed
     )]
@@ -97,6 +100,7 @@ pub struct InitializeOracle<'info> {
 
     pub system_program: Program<'info, System>,
 }
+
 
 #[derive(Accounts)]
 pub struct UpdateOracle<'info> {
@@ -128,15 +132,20 @@ pub struct OracleHistoryEntry {
 
 impl Oracle {
     // Calculate space based on the number of verifiers and history
-    pub fn space(verifier_count: usize,history_entries:usize) -> usize {
-        8  // asset_value size
-        + 8 // round_id_counter
-        + 1 // required_verifications
-        + (32 * verifier_count) // Verifier Pubkey size (32 bytes per verifier)
-        + verifier_count // Approval bools (1 byte per verifier)
-        + 4 // History vector size (dynamic length, so add space for storing length)
-        + (8 + 8 + 8) * history_entries // Assuming 100 history entries: 8 bytes for round_id, 8 bytes for asset_value, 8 bytes for timestamp
-    }
+    pub fn space(verifier_count: usize, max_history_entries: usize) -> usize {
+      // Base sizes for static fields
+      let base_size = 8  // asset_value (u64)
+          + 8 // round_id_counter (u64)
+          + 1 // required_verifications (u8)
+          + 4; // Size for storing the length of the `history` vector (vec length prefix is 4 bytes)
+
+      // Dynamic fields
+      let verifier_size = 32 * verifier_count; // Each verifier (Pubkey) is 32 bytes
+      let approval_size = verifier_count; // Each approval is 1 byte (bool)
+      let history_size = (8 + 8 + 8) * max_history_entries; // Each history entry is 8 bytes for round_id, asset_value, and timestamp
+
+      base_size + verifier_size + approval_size + history_size
+  }
 }
 
 // Error codes

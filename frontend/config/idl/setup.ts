@@ -15,6 +15,7 @@ export const provider = new AnchorProvider(
 );
 
 // Define your program ID
+//NEW PROGRAM ID: 29d8K1vPLf6U8gHStELSdVBUSwptmPDHpCm5xxhAbJbs
 export const programId = new PublicKey('BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN'); // Replace with your programId
 export const program = new Program(idl as Idl, provider);
 
