@@ -2,7 +2,6 @@ import { clusterApiUrl, Connection, PublicKey, Transaction, SystemProgram } from
 import { Program, AnchorProvider, IdlAccounts, BN, web3 } from "@coral-xyz/anchor";
 import idl from "./oracle.json"; // IDL JSON File
 import type { Oracle } from "./idlType"; // Import Oracle type for specific parts if needed
-import { WalletAdapter } from "@solana/wallet-adapter-react"; // Import wallet adapter
 
 // Initialize Solana connection
 const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
@@ -16,6 +15,7 @@ export const provider = new AnchorProvider(
 
 // Define your program ID
 //NEW PROGRAM ID: 29d8K1vPLf6U8gHStELSdVBUSwptmPDHpCm5xxhAbJbs
+//Working no round ID: BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN
 export const programId = new PublicKey('BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN'); // Replace with your programId
 export const program = new Program(idl as Idl, provider);
 
