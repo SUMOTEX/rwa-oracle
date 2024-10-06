@@ -1,64 +1,82 @@
 'use client';
+
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, Transaction, TransactionInstruction, SystemProgram, Keypair } from '@solana/web3.js';
+import { Transaction, PublicKey, Keypair } from '@solana/web3.js';
 import { useEffect, useState } from 'react';
 import { Button } from '@nextui-org/react';
-import { Buffer } from 'buffer'; // Needed to handle buffer in the browser
+import { program, oraclePDA } from "../config/idl/setup"; // Import from setup.ts
+import { web3, BN } from '@project-serum/anchor';
 
 export default function UpdateOracleValue() {
     const { connection } = useConnection();
-    const { publicKey, sendTransaction, connected, connect } = useWallet();
-    const [newOracleValue, setNewOracleValue] = useState<number>(0);
-    const [verifier, setVerifier] = useState<string>('');
-    const [verifiers, setVerifiers] = useState<string[]>([]);
-    const [requiredVerifications, setRequiredVerifications] = useState<number>(1);
+    const { wallet, publicKey, sendTransaction, connected, connect } = useWallet();
+    const [newOracleValue, setNewOracleValue] = useState(0);
+    const [verifier, setVerifier] = useState('');
+    const [verifiers, setVerifiers] = useState([]);
+    const [requiredVerifications, setRequiredVerifications] = useState(1);
+    const [oracleData, setOracleData] = useState(null);
+    const [transactionHistory, setTransactionHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string>(''); // Error message state
+    const [errorMessage, setErrorMessage] = useState('');
 
-    // Replace with your program and oracle account public keys
-    //HUM54NUqyqwnnRRdX73ArAWdioJckYhmxUuwTpx6uTS3
-    const programId = new PublicKey('7CUpZy9uZfm4EFYxafWCthA9qCaaLVZscW4feJuZ46Q2');
-    const oracleGeneratedPair = new PublicKey("HUM54NUqyqwnnRRdX73ArAWdioJckYhmxUuwTpx6uTS3");
-    const oracleAccountKeypair = Keypair.generate(); // Generate new keypair for Oracle account
-    const oracleAccountPublicKey = oracleAccountKeypair.publicKey;
+    // Step 1: Use imported program and PDA from setup.ts
+    const [oracleGeneratedPair, setOracleGeneratedPair] = useState<Keypair | null>(null);
 
-    const oracleAccountSpace = 1000; // Adjust size as needed for Oracle data
+    useEffect(() => {
+        // Generate keypair only once when the component loads
+        setOracleGeneratedPair(Keypair.generate());
+    }, []);
 
-    useEffect(()=>{
-        readOracleAccount();
-    },[])
+    useEffect(() => {
+        if (program && oraclePDA) {
+            readOracleAccount();
+            readTransactionHistory();
+        }
+    }, [program, oraclePDA]);
 
     const readOracleAccount = async () => {
         try {
-            const accountInfo = await connection.getAccountInfo(oracleGeneratedPair);
-            if (accountInfo) {
-                const oracleData = accountInfo.data; // Replace this with your deserialization logic
-                console.log('Oracle Account Data:', oracleData);
-            } else {
-                console.log('No Oracle account data found.');
-            }
+            const oracleAccount = await program.account.oracle.fetch(oraclePDA); // Fetch oracle account using PDA
+            console.log('Oracle Account Data:', oracleAccount);
+            setOracleData(oracleAccount); // Store fetched oracle data in state
         } catch (error) {
-            console.error('Error reading Oracle account:', error);
+            if (error.message.includes('Account does not exist')) {
+                console.error('Oracle account does not exist yet. Please initialize it first.');
+                setErrorMessage('Oracle account does not exist yet. Please initialize it first.');
+            } else {
+                console.error('Error reading Oracle account:', error);
+                setErrorMessage('Error reading Oracle account: ' + error.message);
+            }
         }
     };
     
-    // Function to add verifier public keys
-    const addVerifier = () => {
+
+    const readTransactionHistory = async () => {
         try {
-            const verifierPubKey = new PublicKey(verifier); // Try to create a PublicKey
-            setVerifiers([...verifiers, verifierPubKey.toBase58()]); // Add to verifiers list
-            setVerifier(''); // Clear the input field
-            setErrorMessage(''); // Clear error message if successful
+            const signatures = await connection.getSignaturesForAddress(oraclePDA);
+            const transactions = await Promise.all(
+                signatures.map(async (signatureInfo) => {
+                    return await connection.getTransaction(signatureInfo.signature, { commitment: 'confirmed' });
+                })
+            );
+            setTransactionHistory(transactions);
         } catch (error) {
-            setErrorMessage('Invalid Public Key input'); // Show error if invalid
+            console.error('Error reading transaction history:', error);
         }
     };
 
-    const initializeOracle = async () => {
-        if (!connected) {
-            await connect(); // Ensure wallet is connected
+    const addVerifier = () => {
+        try {
+            const verifierPubKey = new PublicKey(verifier);
+            setVerifiers((prevVerifiers) => [...prevVerifiers, verifierPubKey.toBase58()]);
+            setVerifier('');
+            setErrorMessage('');
+        } catch (error) {
+            setErrorMessage('Invalid Public Key input');
         }
-
+    };
+    const initializeOracle = async () => {
+        if (!connected) await connect();
         if (!publicKey) {
             alert('Please connect your wallet!');
             return;
@@ -67,129 +85,160 @@ export default function UpdateOracleValue() {
         setIsLoading(true);
 
         try {
-            // Ensure Oracle account exists or create it
-            const accountInfo = await connection.getAccountInfo(oracleAccountPublicKey);
-            if (!accountInfo) {
-                console.log('Creating Oracle account...');
+            const accountInfo = await connection.getAccountInfo(oraclePDA);
+            const payerBalance = await connection.getBalance(publicKey);
 
-                // Get rent-exempt balance for the account
-                const lamports = await connection.getMinimumBalanceForRentExemption(oracleAccountSpace);
-
-                // Create Oracle account
-                const createOracleAccountIx = SystemProgram.createAccount({
-                    fromPubkey: publicKey, // User's public key
-                    newAccountPubkey: oracleAccountPublicKey, // Oracle account public key
-                    lamports, // Rent-exempt balance
-                    space: oracleAccountSpace, // Size of the account data
-                    programId, // Your program's ID
-                });
-
-                const createAccountTransaction = new Transaction().add(createOracleAccountIx);
-                const signature = await sendTransaction(createAccountTransaction, connection, {
-                    signers: [oracleAccountKeypair], // Add Oracle account keypair as a signer
-                });
-                await connection.confirmTransaction(signature, 'confirmed');
-                console.log('Oracle account created:', signature);
-            } else if (accountInfo.owner.toBase58() !== programId.toBase58()) {
-                console.error('Oracle account is not owned by the correct program');
+            if (accountInfo) {
+                alert('Oracle account already initialized.');
                 return;
             }
 
-            // Convert verifier public keys from strings to PublicKey objects
-            const verifierPubKeys = verifiers.map((verifier) => new PublicKey(verifier));
+            const numVerifiers = verifiers.length;
+            const lamports = await connection.getMinimumBalanceForRentExemption(8 + (32 * numVerifiers) + 1 + numVerifiers);
 
-            // Build the data buffer manually without Borsh
-            const initialOracleValueBuffer = Buffer.alloc(8); // u64 is 8 bytes
-            initialOracleValueBuffer.writeBigUInt64LE(BigInt(newOracleValue));
+            if (payerBalance < lamports) {
+                alert('Insufficient balance to create the Oracle account.');
+                return;
+            }
 
-            // Encode required verifications as a single byte
-            const requiredVerificationsBuffer = Buffer.from([requiredVerifications]);
+            const initializeOracleIx = await program.methods.initializeOracle(
+                new BN(newOracleValue),
+                requiredVerifications,
+                numVerifiers
+            ).accounts({
+                oracle: oraclePDA,
+                payer: publicKey,
+                systemProgram: web3.SystemProgram.programId,
+            }).instruction();
 
-            // Serialize verifiers as a buffer of concatenated public key bytes
-            const verifierBuffer = Buffer.concat(verifierPubKeys.map((key) => key.toBuffer()));
+            const transaction = new Transaction().add(initializeOracleIx);
+            transaction.feePayer = publicKey;
 
-            // Concatenate all data into a single buffer
-            const dataBuffer = Buffer.concat([initialOracleValueBuffer, verifierBuffer, requiredVerificationsBuffer]);
+            const { blockhash } = await connection.getLatestBlockhash();
+            transaction.recentBlockhash = blockhash;
 
-            // Create transaction instruction for Oracle initialization
-            const instruction = new TransactionInstruction({
-                keys: [
-                    { pubkey: oracleAccountPublicKey, isSigner: false, isWritable: true }, // Oracle account
-                    { pubkey: publicKey, isSigner: true, isWritable: false }, // User's public key
-                ],
-                programId,
-                data: dataBuffer, // Manually constructed data buffer for Oracle initialization
-            });
-
-            // Create a transaction and add the instruction
-            const transaction = new Transaction().add(instruction);
-
-            // Send and sign the transaction with the wallet
             const signature = await sendTransaction(transaction, connection);
-            console.log('Transaction signature:', signature);
-
-            // Confirm the transaction
             const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-            console.log('Transaction confirmation:', confirmation);
 
-            // Fetch transaction details
-            const transactionDetails = await connection.getTransaction(signature, { commitment: 'confirmed' });
-            console.log('Transaction details:', transactionDetails);
-
-            // Log program logs if they exist
-            if (transactionDetails && transactionDetails.meta && transactionDetails.meta.logMessages) {
-                console.log('Program logs:', transactionDetails.meta.logMessages);
+            if (confirmation?.value?.err) {
+                alert(`Transaction failed: ${confirmation.value.err}`);
             } else {
-                console.log('No logs available.');
+                console.log('Oracle initialized successfully!');
+                alert('Oracle initialized successfully!');
+                await readOracleAccount();
             }
         } catch (error) {
             console.error('Error initializing Oracle:', error);
-            setErrorMessage('Error initializing Oracle: ' + error.message); // Set error message
+            setErrorMessage('Error initializing Oracle: ' + error.message);
         } finally {
             setIsLoading(false);
         }
     };
 
-    return (
-        <div style={{ padding: '20px' }}>
-            <h1>Solana Oracle Client</h1>
 
-            <div>
-                <h3>Initialize Oracle</h3>
-                <input
-                    type="number"
-                    value={newOracleValue}
-                    onChange={(e) => setNewOracleValue(Number(e.target.value))}
-                    placeholder="Initial Oracle Value"
-                />
+    const updateOracleValue = async () => {
+        if (!connected) await connect();
+        if (!publicKey) {
+            alert('Please connect your wallet!');
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            // Check if Oracle Account exists
+            const accountInfo = await connection.getAccountInfo(oraclePDA);
+            if (!accountInfo) {
+                alert('Oracle account does not exist yet. Please initialize it first.');
+                return;
+            }
+
+            // Construct the instruction to update the Oracle's value
+            const updateOracleIx = await program.methods.updateOracle(
+                new BN(newOracleValue)
+            ).accounts({
+                oracle: oraclePDA,
+                payer: publicKey,
+                systemProgram: web3.SystemProgram.programId, // Ensure system program is properly passed
+            }).instruction();
+
+            // Create a new transaction with the update instruction
+            const transaction = new Transaction().add(updateOracleIx);
+            transaction.feePayer = publicKey;
+
+            // Fetch the latest blockhash
+            const { blockhash } = await connection.getLatestBlockhash();
+            transaction.recentBlockhash = blockhash;
+
+            // Send the transaction to the network
+            const signature = await sendTransaction(transaction, connection);
+
+            // Confirm the transaction
+            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+
+            if (confirmation?.value?.err) {
+                alert(`Transaction failed: ${confirmation.value.err}`);
+            } else {
+                alert('Oracle value updated successfully!');
+                console.log('Oracle value updated successfully!');
+                // Update the state by fetching the latest Oracle account data
+                await readOracleAccount();
+                await readTransactionHistory();
+            }
+
+        } catch (error) {
+            console.error('Error updating Oracle value:', error);
+            setErrorMessage('Error updating Oracle value: ' + error.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
+    return (
+        <div>
+            <h1>Solana Oracle Client</h1>
+            <h3>Oracle ID (PDA): {oraclePDA.toBase58()}</h3> {/* Display the Oracle ID */}
+
+            {!oracleData ? (
                 <div>
-                    <input
-                        type="text"
-                        value={verifier}
-                        onChange={(e) => setVerifier(e.target.value)}
-                        placeholder="Verifier Public Key"
-                    />
+                    <h2>Initialize Oracle</h2>
+                    <input type="number" onChange={(e) => setNewOracleValue(Number(e.target.value))} placeholder="Initial Oracle Value" />
+                    <input type="text" onChange={(e) => setVerifier(e.target.value)} placeholder="Verifier Public Key" />
                     <Button onClick={addVerifier}>Add Verifier</Button>
-                    {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
-                </div>
-                <div>
-                    <h4>Verifiers</h4>
+                    {errorMessage && <p>{errorMessage}</p>}
+                    <h3>Verifiers</h3>
                     <ul>
                         {verifiers.map((v, idx) => (
                             <li key={idx}>{v}</li>
                         ))}
                     </ul>
+                    <input type="number" onChange={(e) => setRequiredVerifications(Number(e.target.value))} placeholder="Required Verifications" />
+                    <Button onClick={initializeOracle}>{isLoading ? 'Initializing...' : 'Initialize Oracle'}</Button>
                 </div>
-                <input
-                    type="number"
-                    value={requiredVerifications}
-                    onChange={(e) => setRequiredVerifications(Number(e.target.value))}
-                    placeholder="Required Verifications"
-                />
-                <Button onClick={initializeOracle} disabled={isLoading}>
-                    {isLoading ? 'Initializing...' : 'Initialize Oracle'}
-                </Button>
-            </div>
+            ) : (
+                <div>
+                    <h2>Oracle Details</h2>
+                    <p>Asset Value: {oracleData.assetValue.toString()}</p> {/* Display Oracle's asset value */}
+                    <p>Required Verifications: {oracleData.requiredVerifications}</p> {/* Display required verifications */}
+                    <h2>Update Oracle Value</h2>
+                    <input type="number" onChange={(e) => setNewOracleValue(Number(e.target.value))} placeholder="New Oracle Value" />
+                    <Button onClick={updateOracleValue}>{isLoading ? 'Updating...' : 'Update Oracle Value'}</Button>
+                </div>
+            )}
+            {transactionHistory.length > 0 && (
+                <div>
+                    <h2>Transaction History</h2>
+                    <ul>
+                        {transactionHistory.map((tx, idx) => (
+                            <li key={idx}>
+                                Signature: {tx.transaction.signatures[0]}{' '}
+                                Status: {tx.meta?.err ? 'Failed' : 'Confirmed'}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
         </div>
     );
 }

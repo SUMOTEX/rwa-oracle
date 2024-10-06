@@ -1,0 +1,222 @@
+{
+  "address": "BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN",
+  "metadata": {
+    "name": "oracle_anchor",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "initialize_oracle",
+      "discriminator": [
+        144,
+        223,
+        131,
+        120,
+        196,
+        253,
+        181,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "oracle",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "initial_value",
+          "type": "u64"
+        },
+        {
+          "name": "required_verifications",
+          "type": "u8"
+        },
+        {
+          "name": "verifier_count",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "read_latest_oracle",
+      "discriminator": [
+        150,
+        208,
+        25,
+        41,
+        251,
+        106,
+        206,
+        235
+      ],
+      "accounts": [
+        {
+          "name": "oracle"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "read_oracle_by_round_id",
+      "discriminator": [
+        2,
+        150,
+        129,
+        121,
+        157,
+        159,
+        88,
+        208
+      ],
+      "accounts": [
+        {
+          "name": "oracle"
+        }
+      ],
+      "args": [
+        {
+          "name": "round_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_oracle",
+      "discriminator": [
+        112,
+        41,
+        209,
+        18,
+        248,
+        226,
+        252,
+        188
+      ],
+      "accounts": [
+        {
+          "name": "oracle",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_asset_value",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Oracle",
+      "discriminator": [
+        139,
+        194,
+        131,
+        179,
+        140,
+        179,
+        229,
+        244
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "RoundIdOutOfBounds",
+      "msg": "The provided round ID is out of bounds."
+    }
+  ],
+  "types": [
+    {
+      "name": "Oracle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "asset_value",
+            "type": "u64"
+          },
+          {
+            "name": "verifiers",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "approvals",
+            "type": {
+              "vec": "bool"
+            }
+          },
+          {
+            "name": "required_verifications",
+            "type": "u8"
+          },
+          {
+            "name": "history",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "OracleHistoryEntry"
+                }
+              }
+            }
+          },
+          {
+            "name": "round_id_counter",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleHistoryEntry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "round_id",
+            "type": "u64"
+          },
+          {
+            "name": "asset_value",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

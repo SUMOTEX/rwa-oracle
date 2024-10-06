@@ -18,8 +18,8 @@ export default function AppWalletProvider({
   }: {
     children: React.ReactNode;
   }) {
-    const endpoint = clusterApiUrl('testnet');
-    //const network = WalletAdapterNetwork.Testnet;
+    const endpoint = clusterApiUrl('devnet');
+    const network = WalletAdapterNetwork.Testnet;
     
     // const endpoint = useMemo(() => clusterApiUrl(network), [network]);
     const wallets = useMemo(
