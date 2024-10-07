@@ -1,7 +1,8 @@
-import { clusterApiUrl, Connection, PublicKey, Transaction, SystemProgram } from "@solana/web3.js";
+import { clusterApiUrl, Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { Program, AnchorProvider, IdlAccounts, BN, web3 } from "@coral-xyz/anchor";
 import idl from "./oracle.json"; // IDL JSON File
 import type { Oracle } from "./idlType"; // Import Oracle type for specific parts if needed
+
 
 // Initialize Solana connection
 const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
@@ -17,40 +18,96 @@ export const provider = new AnchorProvider(
 //NEW PROGRAM ID: 29d8K1vPLf6U8gHStELSdVBUSwptmPDHpCm5xxhAbJbs
 //Working no round ID: BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN
 export const programId = new PublicKey('BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN'); // Replace with your programId
-export const program = new Program(idl as Idl, provider);
+export const program = new Program(idl, provider);
 
 // Create PDA for the oracle
-export const [oraclePDA] = PublicKey.findProgramAddressSync(
+export const [oraclePDA, oracleBump] = PublicKey.findProgramAddressSync(
   [Buffer.from("oracle")],
-  programId // Use the programId correctly here
+  programId
 );
+
 
 
 // Example type for Oracle account data
 export type OracleData = IdlAccounts<Oracle>["oracle"];
 
-// Function to initialize the Oracle account
-export const initializeOracle = async (initialValue: number, requiredVerifications: number, verifiers: PublicKey[]) => {
-  try {
-    const lamports = await connection.getMinimumBalanceForRentExemption(OracleData.size); // Get rent exemption for Oracle account size
+// // Function to calculate the size of the Oracle account
+// const calculateOracleSize = (verifierCount: number) => {
+//   const baseSize = 8 + 8 + 1 + 4; // asset_value, round_id_counter, required_verifications, history length
+//   const verifierSize = 32 * verifierCount; // 32 bytes for each Pubkey
+//   const approvalSize = verifierCount; // 1 byte for each approval bool
+//   return baseSize + verifierSize + approvalSize;
+// };
 
-    // Create transaction to initialize Oracle account
-    const tx = new Transaction().add(
-      await program.methods.initializeOracle(new BN(initialValue), requiredVerifications)
-        .accounts({
-          oracle: oraclePDA,
-          payer: provider.wallet.publicKey,
-          systemProgram: SystemProgram.programId, // Fixed system program assignment
-        })
-        .instruction()
+// Function to calculate the size of the Oracle account
+const calculateOracleSize = (verifierCount: number): number => {
+  // Adjust this calculation based on the structure defined in your Oracle account
+  const baseSize = 8 + 1 + 32 * verifierCount + verifierCount + (8 + 8 + 8) * 50; // Example calculation
+  return baseSize;
+};
+
+import { SystemProgram } from '@solana/web3.js';
+
+// Function to initialize the Oracle account
+export const initializeOracle = async (
+  initialValue: number,
+  requiredVerifications: number,
+  verifiers: PublicKey[]
+): Promise<void> => {
+  try {
+    // Ensure the wallet is connected
+    if (!provider.wallet || !provider.wallet.publicKey) {
+      alert("Please connect your wallet!");
+      return;
+    }
+
+    // Calculate the minimum balance needed for rent exemption
+    const lamports = await connection.getMinimumBalanceForRentExemption(
+      calculateOracleSize(verifiers.length)
     );
 
-    const signature = await provider.sendAndConfirm(tx, []);
+    // Create the instruction to create the account with the necessary lamports
+    const createAccountIx = SystemProgram.createAccount({
+      fromPubkey: provider.wallet.publicKey,
+      newAccountPubkey: oraclePDA,
+      lamports,
+      space: calculateOracleSize(verifiers.length),
+      programId: program.programId,
+    });
+
+    // Create the transaction instruction for initializing the Oracle
+    const initializeOracleIx = await program.methods
+      .initializeOracle(
+        new BN(initialValue), // initial_value (u64)
+        requiredVerifications, // required_verifications (u8)
+        verifiers.length // verifier_count (u8)
+      )
+      .accounts({
+        oracle: oraclePDA,
+        payer: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+
+    // Create and set up the transaction
+    const transaction = new Transaction()
+      .add(createAccountIx) // Add the instruction to fund the new account
+      .add(initializeOracleIx); // Add the initialize instruction
+    transaction.feePayer = provider.wallet.publicKey;
+    const { blockhash } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+
+    // Send and confirm the transaction
+    const signature = await provider.sendAndConfirm(transaction, []);
     console.log(`Oracle initialized with signature: ${signature}`);
   } catch (error) {
-    console.error('Error initializing oracle:', error);
+    console.error("Error initializing Oracle:", error);
+    if (error instanceof Error) {
+      alert("Error initializing Oracle: " + error.message);
+    }
   }
 };
+
 
 // Function to update the Oracle account
 export const updateOracleValue = async (newAssetValue: number) => {

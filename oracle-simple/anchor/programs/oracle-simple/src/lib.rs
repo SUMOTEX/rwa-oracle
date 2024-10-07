@@ -1,84 +1,48 @@
 use anchor_lang::prelude::*;
 
-declare_id!("D4cJpMwYznwqVC1dT4ARA5egbAwaxqjbBgsAqWyetymC");
+declare_id!("BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN");
 
 #[program]
 pub mod oracle_anchor {
     use super::*;
 
-    // Initialize the Oracle with an initial value and setup verifiers
-    pub fn initialize_oracle(
-        ctx: Context<InitializeOracle>, 
-        initial_value: u64, 
-        required_verifications: u8, 
-        verifier_count: u8
-    ) -> Result<()> {
+    pub fn initialize_oracle(ctx: Context<InitializeOracle>, initial_value: u64, required_verifications: u8) -> Result<()> {
         let oracle = &mut ctx.accounts.oracle;
         oracle.asset_value = initial_value;
-        oracle.verifiers = vec![Pubkey::default(); verifier_count as usize]; // Initialize with dummy Pubkeys for now
-        oracle.approvals = vec![false; verifier_count as usize];
+        oracle.verifiers = ctx.remaining_accounts.iter().map(|v| v.key()).collect();
+        oracle.approvals = vec![false; ctx.remaining_accounts.len()];
         oracle.required_verifications = required_verifications;
-        oracle.history = vec![]; // Initialize empty history
-        oracle.round_id_counter = 0; // Initialize the round ID counter
+        oracle.history = vec![];
 
-        msg!("Oracle initialized with value: {} and {} verifiers", initial_value, verifier_count);
+        msg!("Oracle initialized with value: {} and {} verifiers", initial_value, ctx.remaining_accounts.len());
         Ok(())
     }
 
-    // Update the Oracle's asset value and store it in the history with roundID
     pub fn update_oracle(ctx: Context<UpdateOracle>, new_asset_value: u64) -> Result<()> {
         let oracle = &mut ctx.accounts.oracle;
         oracle.asset_value = new_asset_value;
-        oracle.approvals = vec![false; oracle.verifiers.len()]; // Reset approvals
+        oracle.approvals = vec![false; oracle.verifiers.len()];
 
         let clock = Clock::get()?;
         let timestamp = clock.unix_timestamp as u64;
 
-        // Increment the round ID and store it in the history entry
-        let round_id = oracle.round_id_counter;
         oracle.history.push(OracleHistoryEntry {
-            round_id,
             asset_value: new_asset_value,
             timestamp,
         });
 
-        // Increment the internal round ID counter for the next update
-        oracle.round_id_counter += 1;
-
-        msg!("Oracle updated with new asset value: {} and round ID: {}", oracle.asset_value, round_id);
+        msg!("Oracle updated with new asset value: {}", oracle.asset_value);
         Ok(())
     }
 
-    // Read the latest state of the Oracle, returning the most recent value
-    pub fn read_latest_oracle(ctx: Context<ReadOracle>) -> Result<()> {
+    pub fn read_oracle(ctx: Context<ReadOracle>) -> Result<()> {
         let oracle = &ctx.accounts.oracle;
 
-        // Check if history exists
-        if let Some(latest_entry) = oracle.history.last() {
-            msg!("Latest Oracle Details:");
-            msg!("Latest Round ID: {}", latest_entry.round_id);
-            msg!("Latest Asset Value: {}", latest_entry.asset_value);
-            msg!("Latest Timestamp: {}", latest_entry.timestamp);
-        } else {
-            msg!("No history found for this Oracle.");
-        }
-
-        Ok(())
-    }
-
-    // Read a specific historical Oracle entry by round ID
-    pub fn read_oracle_by_round_id(ctx: Context<ReadOracle>, round_id: u64) -> Result<()> {
-        let oracle = &ctx.accounts.oracle;
-
-        // Check if the round_id is within bounds of the history vector
-        let entry = oracle.history.iter().find(|entry| entry.round_id == round_id);
-        if let Some(entry) = entry {
-            msg!("Oracle Details for Round ID: {}", round_id);
-            msg!("Asset Value: {}", entry.asset_value);
-            msg!("Timestamp: {}", entry.timestamp);
-        } else {
-            return Err(ErrorCode::RoundIdOutOfBounds.into());
-        }
+        msg!("Oracle Details:");
+        msg!("Asset Value: {}", oracle.asset_value);
+        msg!("Number of Verifiers: {}", oracle.verifiers.len());
+        msg!("Required Verifications: {}", oracle.required_verifications);
+        msg!("Approvals: {:?}", oracle.approvals);
 
         Ok(())
     }
@@ -92,7 +56,7 @@ pub struct InitializeOracle<'info> {
     #[account(
         init,
         payer = payer,
-        space = Oracle::space(1, 10), // Adjust verifier_count and history size (e.g., 5 verifiers, 50 history entries)
+        space = 8 + Oracle::space(ctx.remaining_accounts.len()), // Dynamic space allocation
         seeds = [b"oracle"],
         bump // PDA bump seed
     )]
@@ -100,7 +64,6 @@ pub struct InitializeOracle<'info> {
 
     pub system_program: Program<'info, System>,
 }
-
 
 #[derive(Accounts)]
 pub struct UpdateOracle<'info> {
@@ -114,43 +77,26 @@ pub struct ReadOracle<'info> {
 }
 
 #[account]
+#[derive(AnchorSerialize, AnchorDeserialize, Default)]
 pub struct Oracle {
     pub asset_value: u64,
-    pub verifiers: Vec<Pubkey>,           // List of verifier public keys
-    pub approvals: Vec<bool>,             // Approval status for each verifier
+    pub verifiers: Vec<Pubkey>,           // Verifiers list
+    pub approvals: Vec<bool>,             // Approval status
     pub required_verifications: u8,       // Number of required verifications
     pub history: Vec<OracleHistoryEntry>, // Store historical oracle values
-    pub round_id_counter: u64,            // Internal counter for round IDs
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct OracleHistoryEntry {
-    pub round_id: u64,        // Unique round ID for each Oracle update
-    pub asset_value: u64,     // The asset value at the time of update
-    pub timestamp: u64,       // Unix timestamp of the update
+    pub asset_value: u64,
+    pub timestamp: u64, // Unix timestamp of the update
 }
 
 impl Oracle {
-    // Calculate space based on the number of verifiers and history
-    pub fn space(verifier_count: usize, max_history_entries: usize) -> usize {
-      // Base sizes for static fields
-      let base_size = 8  // asset_value (u64)
-          + 8 // round_id_counter (u64)
-          + 1 // required_verifications (u8)
-          + 4; // Size for storing the length of the `history` vector (vec length prefix is 4 bytes)
-
-      // Dynamic fields
-      let verifier_size = 32 * verifier_count; // Each verifier (Pubkey) is 32 bytes
-      let approval_size = verifier_count; // Each approval is 1 byte (bool)
-      let history_size = (8 + 8 + 8) * max_history_entries; // Each history entry is 8 bytes for round_id, asset_value, and timestamp
-
-      base_size + verifier_size + approval_size + history_size
-  }
-}
-
-// Error codes
-#[error_code]
-pub enum ErrorCode {
-    #[msg("The provided round ID is out of bounds.")]
-    RoundIdOutOfBounds,
+    pub fn space(num_verifiers: usize) -> usize {
+        8 // asset_value size
+        + 1 // required_verifications
+        + (32 * num_verifiers) // Verifier Pubkey size (32 bytes per verifier)
+        + num_verifiers // Approval bools (1 byte each)
+    }
 }

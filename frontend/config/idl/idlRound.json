@@ -1,0 +1,73 @@
+{
+  "version": "0.1.0",
+  "name": "oracle_anchor",
+  "instructions": [
+    {
+      "name": "initializeOracle",
+      "accounts": [
+        { "name": "payer", "isMut": true, "isSigner": true },
+        { "name": "oracle", "isMut": true, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "initialValue", "type": "u64" },
+        { "name": "requiredVerifications", "type": "u8" },
+        { "name": "verifierCount", "type": "u8" }
+      ]
+    },
+    {
+      "name": "updateOracle",
+      "accounts": [{ "name": "oracle", "isMut": true, "isSigner": false }],
+      "args": [{ "name": "newAssetValue", "type": "u64" }]
+    },
+    {
+      "name": "readLatestOracle",
+      "accounts": [{ "name": "oracle", "isMut": false, "isSigner": false }],
+      "args": []
+    },
+    {
+      "name": "readOracleByRoundId",
+      "accounts": [{ "name": "oracle", "isMut": false, "isSigner": false }],
+      "args": [{ "name": "roundId", "type": "u64" }]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Oracle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "assetValue", "type": "u64" },
+          { "name": "verifiers", "type": { "vec": "publicKey" } },
+          { "name": "approvals", "type": { "vec": "bool" } },
+          { "name": "requiredVerifications", "type": "u8" },
+          {
+            "name": "history",
+            "type": { "vec": { "defined": "OracleHistoryEntry" } }
+          },
+          { "name": "roundIdCounter", "type": "u64" }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "OracleHistoryEntry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "roundId", "type": "u64" },
+          { "name": "assetValue", "type": "u64" },
+          { "name": "timestamp", "type": "u64" }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "RoundIdOutOfBounds",
+      "msg": "The provided round ID is out of bounds."
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import { Button } from '@nextui-org/react';
 import { program, oraclePDA } from "../config/idl/setup"; // Import from setup.ts
 import { web3, BN } from '@project-serum/anchor';
 
-
+//normal ID: DssdfXkDof9u9fnt8L57EedCJC3jjysHjz6Ps6JYksqv
 //with round ID: 29d8K1vPLf6U8gHStELSdVBUSwptmPDHpCm5xxhAbJbs
 export default function UpdateOracleValue() {
     const { connection } = useConnection();
