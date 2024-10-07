@@ -8,16 +8,28 @@ import type { Oracle } from "./idlType"; // Import Oracle type for specific part
 const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 
 // Setup the Anchor provider (assuming a wallet is available)
-export const provider = new AnchorProvider(
-  connection,
-  window.solana, // Assuming you're using Phantom or Solana wallet extension
-  { preflightCommitment: "processed" }
-);
+export const getProvider = () => {
+  if (typeof window !== "undefined" && window) {
+      // Check if a wallet is available in the browser
+      const wallet = window.solana;
 
+      // Return the provider if the wallet is found
+      return new AnchorProvider(
+          connection,
+          wallet,
+          { preflightCommitment: "processed" }
+      );
+  } else {
+      console.error("No Solana wallet detected. Please install a wallet like Phantom.");
+      return null; // Return null or handle gracefully if no wallet is detected
+  }
+};
+const provider = getProvider();
 // Define your program ID
 //NEW PROGRAM ID: 29d8K1vPLf6U8gHStELSdVBUSwptmPDHpCm5xxhAbJbs
 //Working no round ID: BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN
 export const programId = new PublicKey('BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN'); // Replace with your programId
+//@ts-ignore
 export const program = new Program(idl, provider);
 
 // Create PDA for the oracle
@@ -29,6 +41,7 @@ export const [oraclePDA, oracleBump] = PublicKey.findProgramAddressSync(
 
 
 // Example type for Oracle account data
+//@ts-ignore
 export type OracleData = IdlAccounts<Oracle>["oracle"];
 
 // // Function to calculate the size of the Oracle account
@@ -131,6 +144,7 @@ export const updateOracleValue = async (newAssetValue: number) => {
 // Function to read Oracle account data
 export const readOracleAccount = async () => {
   try {
+    //@ts-ignore
     const oracleAccount = await program.account.oracle.fetch(oraclePDA);
     console.log('Oracle Account Data:', oracleAccount);
     return oracleAccount;

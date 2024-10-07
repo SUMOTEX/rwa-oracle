@@ -12,7 +12,6 @@ import TokenDetail from "./TokenDetails";
 import KeyHoldings from "./KeyHoldings";
 import { WalletContext } from '@/config/lib/use-connect';
 import { useSearchParams } from 'next/navigation';
-import InvestmentModal from "./InvestModal";
 
 export default function FundDetails() {
     const searchParams = useSearchParams();
@@ -89,11 +88,6 @@ export default function FundDetails() {
                 </div>
 
             </div>
-            <InvestmentModal
-                projectName={details.name}
-                fstAddress={details.fstAddress}
-                isOpen={isModalOpen} onClose={closeModal} />
-
             <Modal isOpen={isFullySubscribed} onClose={closeFullySubscribedModal}>
                 <ModalContent className="m-4 p-4">
                     <div className="text-lg text-bold">Fully Subscribed</div>

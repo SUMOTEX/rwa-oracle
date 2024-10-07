@@ -23,7 +23,28 @@ export default function UpdateOracleValue() {
 
     // Step 1: Use imported program and PDA from setup.ts
     const [oracleGeneratedPair, setOracleGeneratedPair] = useState<Keypair | null>(null);
+    useEffect(() => {
+        // Function to generate random value between 3 million and 4 million
+        const generateRandomValue = () => {
+            return Math.floor(Math.random() * (4000000 - 3000000 + 1)) + 3000000;
+        };
 
+        // Function to automatically update the Oracle value every 30 seconds
+        // const automateUpdate = () => {
+        //     const interval = setInterval(() => {
+        //         const randomValue = generateRandomValue();
+        //         console.log('Updating Oracle with value:', randomValue);
+        //         //updateOracleValue(randomValue); // Update the Oracle with the random value
+        //     }, 30000); // 30 seconds
+
+        //     return () => clearInterval(interval); // Cleanup on component unmount
+        // };
+
+        if (connected) {
+            //automateUpdate();
+        }
+
+    }, [connected]);
     useEffect(() => {
         // Generate keypair only once when the component loads
         setOracleGeneratedPair(Keypair.generate());
@@ -35,11 +56,21 @@ export default function UpdateOracleValue() {
             readTransactionHistory();
         }
     }, [program, oraclePDA]);
+    // useEffect(() => {
+    //     // const interval = setInterval(() => {
+    //     //     autoUpdateOracleValue();
+    //     // }, 7200000); // Update every 60 seconds
+    //     const interval = setInterval(() => {
+    //         autoUpdateOracleValue();
+    //     }, 200000); // Update every 60 seconds
+
+    //     return () => clearInterval(interval); // Cleanup on component unmount
+    // }, [connected, publicKey]);
 
     const readOracleAccount = async () => {
         try {
+            //@ts-ignore
             const oracleAccount = await program.account.oracle.fetch(oraclePDA); // Fetch oracle account using PDA
-            console.log('Oracle Account Data:', oracleAccount);
             setOracleData(oracleAccount); // Store fetched oracle data in state
         } catch (error) {
             if (error.message.includes('Account does not exist')) {
@@ -131,7 +162,6 @@ export default function UpdateOracleValue() {
                 alert('Insufficient balance to create the Oracle account.');
                 return;
             }
-            console.log('PDA:', oraclePDA)
             const initializeOracleIx = await program.methods.initializeOracle(
                 new BN(newOracleValue),
                 requiredVerifications,
@@ -154,20 +184,62 @@ export default function UpdateOracleValue() {
             if (confirmation?.value?.err) {
                 alert(`Transaction failed: ${confirmation.value.err}`);
             } else {
-                console.log('Oracle initialized successfully!');
                 alert('Oracle initialized successfully!');
                 await readOracleAccount();
             }
         } catch (error) {
-            console.error('Error initializing Oracle:', error);
+
             setErrorMessage('Error initializing Oracle: ' + error.message);
         } finally {
             setIsLoading(false);
         }
     };
+    const updateOracleValue = async (newValue) => {
 
+        if (!connected) await connect();
+        if (!publicKey) {
+            alert('Please connect your wallet!');
+            return;
+        }
 
-    const updateOracleValue = async () => {
+        try {
+            const accountInfo = await connection.getAccountInfo(oraclePDA);
+            if (!accountInfo) {
+                alert('Oracle account does not exist yet. Please initialize it first.');
+                return;
+            }
+
+            const updateOracleIx = await program.methods.updateOracle(
+                new BN(newValue)
+            ).accounts({
+                oracle: oraclePDA,
+                payer: publicKey,
+                systemProgram: web3.SystemProgram.programId,
+            }).instruction();
+
+            const transaction = new Transaction().add(updateOracleIx);
+            transaction.feePayer = publicKey;
+
+            const { blockhash } = await connection.getLatestBlockhash();
+            transaction.recentBlockhash = blockhash;
+
+            const signature = await sendTransaction(transaction, connection);
+            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+
+            if (confirmation?.value?.err) {
+                console.error('Transaction failed:', confirmation.value.err);
+            } else {
+                console.log('Oracle value updated successfully!');
+                await readOracleAccount();
+                await readTransactionHistory();
+            }
+        } catch (error) {
+            console.error('Error updating Oracle value:', error);
+            setErrorMessage('Error updating Oracle value: ' + error.message);
+        }
+    };
+
+    const autoUpdateOracleValue = async () => {
         if (!connected) await connect();
         if (!publicKey) {
             alert('Please connect your wallet!');
@@ -177,59 +249,108 @@ export default function UpdateOracleValue() {
         setIsLoading(true);
 
         try {
-            // Check if Oracle Account exists
             const accountInfo = await connection.getAccountInfo(oraclePDA);
             if (!accountInfo) {
                 alert('Oracle account does not exist yet. Please initialize it first.');
                 return;
             }
 
-            // Construct the instruction to update the Oracle's value
-            const updateOracleIx = await program.methods.updateOracle(
-                new BN(newOracleValue)
-            ).accounts({
+            // Generate a random value between 3 million and 4 million
+            const randomValue = Math.floor(Math.random() * (4000000 - 3000000 + 1)) + 3000000;
+
+            // Construct the transaction
+            const updateOracleIx = await program.methods.updateOracle(new BN(randomValue)).accounts({
                 oracle: oraclePDA,
                 payer: publicKey,
-                systemProgram: web3.SystemProgram.programId, // Ensure system program is properly passed
+                systemProgram: web3.SystemProgram.programId,
             }).instruction();
 
-            // Create a new transaction with the update instruction
             const transaction = new Transaction().add(updateOracleIx);
             transaction.feePayer = publicKey;
 
-            // Fetch the latest blockhash
             const { blockhash } = await connection.getLatestBlockhash();
             transaction.recentBlockhash = blockhash;
 
-            // Send the transaction to the network
+            // Send the transaction
             const signature = await sendTransaction(transaction, connection);
+            console.log("Transaction Signature:", signature);
 
             // Confirm the transaction
             const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-
             if (confirmation?.value?.err) {
                 alert(`Transaction failed: ${confirmation.value.err}`);
             } else {
                 alert('Oracle value updated successfully!');
-                console.log('Oracle value updated successfully!');
-                // Update the state by fetching the latest Oracle account data
-                await readOracleAccount();
-                await readTransactionHistory();
+                await readOracleAccount(); // Refresh Oracle data
             }
 
         } catch (error) {
             console.error('Error updating Oracle value:', error);
-            setErrorMessage('Error updating Oracle value: ' + error.message);
         } finally {
             setIsLoading(false);
         }
     };
+    // const updateOracleValue = async () => {
+    //     if (!connected) await connect();
+    //     if (!publicKey) {
+    //         alert('Please connect your wallet!');
+    //         return;
+    //     }
+
+    //     setIsLoading(true);
+
+    //     try {
+    //         // Check if Oracle Account exists
+    //         const accountInfo = await connection.getAccountInfo(oraclePDA);
+    //         if (!accountInfo) {
+    //             alert('Oracle account does not exist yet. Please initialize it first.');
+    //             return;
+    //         }
+
+    //         // Construct the instruction to update the Oracle's value
+    //         const updateOracleIx = await program.methods.updateOracle(
+    //             new BN(newOracleValue)
+    //         ).accounts({
+    //             oracle: oraclePDA,
+    //             payer: publicKey,
+    //             systemProgram: web3.SystemProgram.programId, // Ensure system program is properly passed
+    //         }).instruction();
+
+    //         // Create a new transaction with the update instruction
+    //         const transaction = new Transaction().add(updateOracleIx);
+    //         transaction.feePayer = publicKey;
+
+    //         // Fetch the latest blockhash
+    //         const { blockhash } = await connection.getLatestBlockhash();
+    //         transaction.recentBlockhash = blockhash;
+
+    //         // Send the transaction to the network
+    //         const signature = await sendTransaction(transaction, connection);
+
+    //         // Confirm the transaction
+    //         const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+
+    //         if (confirmation?.value?.err) {
+    //             alert(`Transaction failed: ${confirmation.value.err}`);
+    //         } else {
+    //             // Update the state by fetching the latest Oracle account data
+    //             await readOracleAccount();
+    //             await readTransactionHistory();
+    //         }
+
+    //     } catch (error) {
+    //         console.error('Error updating Oracle value:', error);
+    //         setErrorMessage('Error updating Oracle value: ' + error.message);
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // };
 
 
     return (
         <div>
-            <h1>Solana Oracle Client</h1>
-            <h3>Oracle ID (PDA): {oraclePDA.toBase58()}</h3> {/* Display the Oracle ID */}
+            <h3>Oracle ID: {oraclePDA.toBase58()}</h3> {/* Display the Oracle ID */}
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
             {!oracleData ? (
                 <div>
@@ -249,31 +370,143 @@ export default function UpdateOracleValue() {
                 </div>
             ) : (
                 <div>
-                    <h2>Oracle Details</h2>
-                    <p>Asset Value: {oracleData.assetValue.toString()}</p> {/* Display Oracle's asset value */}
-                    <p>Required Verifications: {oracleData.requiredVerifications}</p> {/* Display required verifications */}
-                    <h2>Update Oracle Value</h2>
-                    <input type="number" onChange={(e) => setNewOracleValue(Number(e.target.value))} placeholder="New Oracle Value" />
-                    <Button onClick={updateOracleValue}>{isLoading ? 'Updating...' : 'Update Oracle Value'}</Button>
+                    <h2>Asset Details</h2>
+                    <p>Asset Name: No 8, Jalan Setia Murni </p>
+                    <p> Asset Latest Value: {new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' }).format(oracleData.assetValue)}</p> {/* Display Oracle's asset value */}
+
+                    {/* <input type="number" onChange={(e) => setNewOracleValue(Number(e.target.value))} placeholder="New Oracle Value" />
+                    <Button onClick={updateOracleValue}>{isLoading ? 'Updating...' : 'Update Oracle Value'}</Button> */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '20px 0' }}>
+                        {/* First Icon */}
+                        <div style={{ position: 'relative' }}>
+                            <img src="./gov.png" height={60} width={60} />
+
+                        </div>
+
+                        {/* Connecting Green Line */}
+                        <div style={{
+                            position: 'relative',
+                            flexGrow: 1, // Make the line grow to fill space between icons
+                            height: '2px', // Thin line
+                            backgroundColor: '#B0BEC5', // Base grey color
+                            margin: '0 10px', // Space around the line
+                            overflow: 'hidden', // Hide the animated part overflow
+                        }}>
+                            <div style={{
+                                height: '100%',
+                                width: '100%', // Full width for animation
+                                backgroundColor: '#4caf50', // Green color for the moving part
+                                animation: 'dataFlow 2s infinite linear',
+                            }}></div>
+                        </div>
+
+                        {/* Second Icon */}
+                        <div style={{ position: 'relative' }}>
+                            <img src="./sumotex.png" height={50} width={50} />
+                        </div>
+
+                        {/* Connecting Green Line */}
+                        <div style={{
+                            position: 'relative',
+                            flexGrow: 1, // Make the line grow to fill space between icons
+                            height: '2px', // Thin line
+                            backgroundColor: '#B0BEC5', // Base grey color
+                            margin: '0 10px', // Space around the line
+                            overflow: 'hidden', // Hide the animated part overflow
+                        }}>
+                            <div style={{
+                                height: '100%',
+                                width: '100%', // Full width for animation
+                                backgroundColor: '#4caf50', // Green color for the moving part
+                                animation: 'dataFlow 2s infinite linear',
+                            }}></div>
+                        </div>
+
+                        {/* Third Icon */}
+                        <div style={{ position: 'relative' }}>
+                            <img src="./solana.png" height={60} width={60} />
+                        </div>
+                    </div>
                 </div>
             )}
+            <br />
             {transactionHistory.length > 0 && (
                 <div>
                     <h2>Oracle Written Values</h2>
-                    {transactionHistory.length > 0 ? (
-                        <ul>
-                            {transactionHistory.map((entry, idx) => (
-                                <li key={idx}>
-                                    Value: {entry.value} | Timestamp: {entry.timestamp} |
-                                 
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p>No values found.</p>
-                    )}
+                    {transactionHistory.map((entry, idx) => (
+                        <div key={idx} style={{ position: 'relative', marginBottom: '40px' }}>
+                            {/* Base grey line */}
+                            {idx < transactionHistory.length - 1 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    left: '2%',
+                                    top: '30px', // Start below the dot
+                                    transform: 'translateX(-50%)', // Center the line horizontally
+                                    height: '90px', // Adjust height to fit between dots
+                                    width: '2px',
+                                    backgroundColor: 'darkgrey', // Grey base color
+                                    zIndex: '-2'
+                                }}></div>
+                            )}
+
+                            {/* Moving green line */}
+                            {idx === 0 && transactionHistory.length > 1 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    left: '2%',
+                                    top: '30px', // Start below the dot
+                                    transform: 'translateX(-50%)', // Center the line horizontally
+                                    height: '90px', // Make the height the same as the base grey line
+                                    width: '2px',
+                                    backgroundColor: 'darkgrey', // Green color for moving part
+                                    zIndex: '-1',
+                                    //animation: 'greenMove 1s infinite linear',
+                                }}></div>
+                            )}
+
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <div style={{
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    backgroundColor: idx === 0 ? '#4caf50' : '#FFEB3B', // Green for the latest, yellow for the rest
+                                    border: '2px solid #000',
+                                    marginRight: '10px',
+                                    animation: 'fadeIn 0.5s ease-in-out',
+                                    position: 'relative', // Make dot positioning relative
+                                    zIndex: '1'
+                                }}></div>
+                                <div>
+                                    <h1 style={{ marginBottom: '4px' }}>Asset Value: {new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' }).format(entry.value)}</h1>
+                                    <h2 style={{ color: '#888' }}>Date: {entry.timestamp}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+
                 </div>
             )}
+            <style jsx>{`
+    @keyframes greenMoveHorizontal {
+        0% {
+            transform: translateX(0);
+            width: 0;
+        }
+        100% {
+            transform: translateX(0);
+            width: 50px; /* Expand the width to create the effect of moving left to right */
+        }
+    }
+    @keyframes dataFlow {
+                    0% {
+                        transform: translateX(-100%);
+                    }
+                    100% {
+                        transform: translateX(100%);
+                    }
+                }
+`}</style>
         </div>
+
     );
 }

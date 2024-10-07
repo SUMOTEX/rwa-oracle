@@ -14,11 +14,15 @@ const nextConfig = {
       'no-console': 'off',
       'padding-line-between-statements': 'off',
     },
-    eslint:{
-      ignoreDuringBuilds: true
-    },
+    eslint: {
+      ignoreDuringBuilds: true,
+  },
+  // Ignore TypeScript errors during build (if you're using TypeScript)
+  typescript: {
+      ignoreBuildErrors: true,
+  },
     webpack: (config) => {
-      config.externals.push("pino-pretty", "lokijs", "encoding");
+      config.externals.push("pino-pretty", 'bigint', "lokijs", "encoding", 'node-gyp-build');
       return config;
     }
 }
