@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/oracle_anchor.json`.
  */
 export type OracleAnchor = {
-  "address": "D4cJpMwYznwqVC1dT4ARA5egbAwaxqjbBgsAqWyetymC",
+  "address": "BsUhCxyyyGVc9ajGKKCH4kdHXGNUqqUEZjYKxk9Fo8rN",
   "metadata": {
     "name": "oracleAnchor",
     "version": "0.1.0",
@@ -63,24 +63,20 @@ export type OracleAnchor = {
         {
           "name": "requiredVerifications",
           "type": "u8"
-        },
-        {
-          "name": "verifierCount",
-          "type": "u8"
         }
       ]
     },
     {
-      "name": "readLatestOracle",
+      "name": "readOracle",
       "discriminator": [
-        150,
-        208,
-        25,
-        41,
-        251,
-        106,
-        206,
-        235
+        85,
+        207,
+        64,
+        8,
+        80,
+        154,
+        244,
+        212
       ],
       "accounts": [
         {
@@ -88,30 +84,6 @@ export type OracleAnchor = {
         }
       ],
       "args": []
-    },
-    {
-      "name": "readOracleByRoundId",
-      "discriminator": [
-        2,
-        150,
-        129,
-        121,
-        157,
-        159,
-        88,
-        208
-      ],
-      "accounts": [
-        {
-          "name": "oracle"
-        }
-      ],
-      "args": [
-        {
-          "name": "roundId",
-          "type": "u64"
-        }
-      ]
     },
     {
       "name": "updateOracle",
@@ -154,13 +126,6 @@ export type OracleAnchor = {
       ]
     }
   ],
-  "errors": [
-    {
-      "code": 6000,
-      "name": "roundIdOutOfBounds",
-      "msg": "The provided round ID is out of bounds."
-    }
-  ],
   "types": [
     {
       "name": "oracle",
@@ -196,10 +161,6 @@ export type OracleAnchor = {
                 }
               }
             }
-          },
-          {
-            "name": "roundIdCounter",
-            "type": "u64"
           }
         ]
       }
@@ -209,10 +170,6 @@ export type OracleAnchor = {
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "roundId",
-            "type": "u64"
-          },
           {
             "name": "assetValue",
             "type": "u64"

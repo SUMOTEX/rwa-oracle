@@ -56,7 +56,7 @@ pub struct InitializeOracle<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + Oracle::space(ctx.remaining_accounts.len()), // Dynamic space allocation
+        space = 8 + Oracle::space(MAX_VERIFIERS), // Dynamic space allocation
         seeds = [b"oracle"],
         bump // PDA bump seed
     )]
@@ -77,7 +77,7 @@ pub struct ReadOracle<'info> {
 }
 
 #[account]
-#[derive(AnchorSerialize, AnchorDeserialize, Default)]
+#[derive(Default)] // Only use Default if needed; Anchor handles serialization/deserialization automatically
 pub struct Oracle {
     pub asset_value: u64,
     pub verifiers: Vec<Pubkey>,           // Verifiers list
@@ -93,10 +93,13 @@ pub struct OracleHistoryEntry {
 }
 
 impl Oracle {
-    pub fn space(num_verifiers: usize) -> usize {
+    pub fn space(max_verifiers: usize) -> usize {
         8 // asset_value size
         + 1 // required_verifications
-        + (32 * num_verifiers) // Verifier Pubkey size (32 bytes per verifier)
-        + num_verifiers // Approval bools (1 byte each)
+        + (32 * max_verifiers) // Verifier Pubkey size (32 bytes per verifier)
+        + max_verifiers // Approval bools (1 byte each)
     }
 }
+
+// Define a constant for maximum verifiers allowed
+const MAX_VERIFIERS: usize = 10; // You can adjust this based on your expected maximum
