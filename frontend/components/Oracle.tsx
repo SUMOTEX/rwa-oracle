@@ -51,21 +51,50 @@ export default function UpdateOracleValue() {
             }
         }
     };
-    
+
 
     const readTransactionHistory = async () => {
         try {
+            // Fetch transaction signatures associated with the oracle PDA
             const signatures = await connection.getSignaturesForAddress(oraclePDA);
+
+            // Fetch full transactions based on these signatures
             const transactions = await Promise.all(
                 signatures.map(async (signatureInfo) => {
                     return await connection.getTransaction(signatureInfo.signature, { commitment: 'confirmed' });
                 })
             );
-            setTransactionHistory(transactions);
+
+            // Parse transactions to extract the values written
+            const writtenValues = transactions.flatMap((tx) => {
+                if (tx && tx.meta && tx.meta.logMessages) {
+                    // Filter log messages to find entries where asset values are written
+                    return tx.meta.logMessages
+                        .filter((log) => log.includes("Oracle updated with new asset value:"))
+                        .map((log) => {
+                            // Extract the value from the log message
+                            const valueMatch = log.match(/Oracle updated with new asset value: (\d+)/);
+                            if (valueMatch) {
+                                return {
+                                    value: parseInt(valueMatch[1], 10),
+                                    timestamp: new Date(tx.blockTime * 1000).toLocaleString(),
+                                    signature: tx.transaction.signatures[0],
+                                    status: tx.meta.err ? 'Failed' : 'Confirmed',
+                                };
+                            }
+                            return null;
+                        })
+                        .filter((entry) => entry !== null); // Filter out any null entries
+                }
+                return [];
+            });
+
+            setTransactionHistory(writtenValues);
         } catch (error) {
             console.error('Error reading transaction history:', error);
         }
     };
+
 
     const addVerifier = () => {
         try {
@@ -102,7 +131,7 @@ export default function UpdateOracleValue() {
                 alert('Insufficient balance to create the Oracle account.');
                 return;
             }
-
+            console.log('PDA:', oraclePDA)
             const initializeOracleIx = await program.methods.initializeOracle(
                 new BN(newOracleValue),
                 requiredVerifications,
@@ -230,15 +259,19 @@ export default function UpdateOracleValue() {
             )}
             {transactionHistory.length > 0 && (
                 <div>
-                    <h2>Transaction History</h2>
-                    <ul>
-                        {transactionHistory.map((tx, idx) => (
-                            <li key={idx}>
-                                Signature: {tx.transaction.signatures[0]}{' '}
-                                Status: {tx.meta?.err ? 'Failed' : 'Confirmed'}
-                            </li>
-                        ))}
-                    </ul>
+                    <h2>Oracle Written Values</h2>
+                    {transactionHistory.length > 0 ? (
+                        <ul>
+                            {transactionHistory.map((entry, idx) => (
+                                <li key={idx}>
+                                    Value: {entry.value} | Timestamp: {entry.timestamp} |
+                                 
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p>No values found.</p>
+                    )}
                 </div>
             )}
         </div>
