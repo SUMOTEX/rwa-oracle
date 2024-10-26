@@ -1,15 +1,27 @@
-# rwa-oracle
+# RWA Oracle
 
-BIP39 Passphrase (empty for none): 
+This repository contains the code for a zk-SNARK-based oracle on the Solana blockchain using the Anchor framework. The contract verifies oracle-reported values through zk-SNARK proofs, ensuring data privacy and integrity.
 
-Wrote new keypair to /Users/mikeleow/.config/solana/id.json
-===================================================================================
-pubkey: 3JXGeDNvz2cyUEKbzpaJHpWBgULytwpocnV7S4YhEbEU
-===================================================================================
-Save this seed phrase and your BIP39 passphrase to recover your new keypair:
-trumpet slab walnut burden genuine exist language sauce program popular sister turn
-===================================================================================
+## Setup
 
+Before running the project, ensure you have the required dependencies and environment set up:
 
-npm run anchor build
- npm run anchor deploy -- --verbose
+1. Install dependencies:
+    ```bash
+    npm install
+    ```
+
+2. Build the Anchor program:
+    ```bash
+    npm run anchor build
+    ```
+
+3. Deploy the Anchor program:
+    ```bash
+    npm run anchor deploy -- --verbose
+    ```
+
+## Verifying Deployment
+
+After deployment, you can check the deployed program's public key:
+
