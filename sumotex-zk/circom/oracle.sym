@@ -1,0 +1,28 @@
+{
+  "main": {
+    "inputs": [
+      {
+        "name": "asset_value",
+        "public": false,
+        "desc": "The actual value reported by the oracle"
+      },
+      {
+        "name": "expected_hash",
+        "public": true,
+        "desc": "The expected hash value stored on-chain"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "is_valid",
+        "desc": "Output whether the computed hash matches the expected hash"
+      }
+    ],
+    "witness": [
+      {
+        "name": "computed_hash",
+        "desc": "The Poseidon hash computed from the asset value"
+      }
+    ]
+  }
+}
