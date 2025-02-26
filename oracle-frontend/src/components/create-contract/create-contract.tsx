@@ -64,10 +64,38 @@ export default function CreateContract() {
     
             setContractAddress(deployedAddress);
             setMessage(`✅ Contract Deployed Successfully at ${deployedAddress}`);
+            await saveContractToBackend(deployedAddress, signer.address, minVerifiers.toString(), rewardPerUpdate);
         } catch (error) {
             setMessage(`❌ Deployment Failed: ${error.message}`);
         } finally {
             setDeploying(false);
+        }
+    };
+    const saveContractToBackend = async (contractAddress:string, ownerAddress:string, minVerifiers:string, rewardPerUpdate:string) => {
+        try {
+            const response = await fetch("https://ewa.sentinel.money/oracle/save_contract", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    title:contractName,
+                    subtitle:description,
+                    contract_address: contractAddress,
+                    owner_address: ownerAddress,
+                    min_verifiers: minVerifiers,
+                    reward_per_update: rewardPerUpdate,
+                }),
+            });
+    
+            const result = await response.json();
+            if (result.success) {
+                console.log("✅ Contract saved successfully:", result.contract_id);
+            } else {
+                console.error("❌ Failed to save contract:", result.error);
+            }
+        } catch (error) {
+            console.error("❌ Error saving contract:", error);
         }
     };
     
@@ -76,22 +104,19 @@ export default function CreateContract() {
         <div className="mx-auto w-full lg:px-8 xl:px-10">
             <div className="mb-6">
                 <h2 className="text-lg font-medium uppercase tracking-wider text-gray-900 dark:text-white sm:text-2xl">
-                    Deploy Real Estate Oracle
+                    Deploy Oracle
                 </h2>
             </div>
-
             {/* Contract Name */}
             <div className="mb-8">
                 <InputLabel title="Contract Name" important />
                 <Input type="text" placeholder="Enter contract name" value={contractName} onChange={(e) => setContractName(e.target.value)} />
             </div>
-
             {/* Description */}
             <div className="mb-8">
                 <InputLabel title="Description" subTitle="Describe the contract functionality." />
                 <Textarea placeholder="Provide a detailed description of your contract" value={description} onChange={(e) => setDescription(e.target.value)} />
-            </div>
-
+            </div>  
             {/* Minimum Verifiers */}
             <div className="mb-8">
                 <InputLabel title="Minimum Verifier Approvals" subTitle="Number of approvals required for an update." />

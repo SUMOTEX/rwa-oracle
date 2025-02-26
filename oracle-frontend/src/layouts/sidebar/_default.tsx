@@ -62,7 +62,7 @@ export default function Sidebar({
       )}
     >
       <div className="relative flex h-24 items-center justify-between overflow-hidden px-6 py-4 2xl:px-8">
-        <Logo />
+        {/* <Logo /> */}
         <div className="md:hidden">
           <Button
             title="Close"
@@ -79,7 +79,7 @@ export default function Sidebar({
 
       <SimpleBar className="h-[calc(100%-96px)]">
         <div className="px-6 pb-5 2xl:px-8">
-          <AuthorCard
+          {/* <AuthorCard
             image={AuthorImage}
             name="Cameron Williamson"
             role="admin"
@@ -90,7 +90,7 @@ export default function Sidebar({
                   : `/${layout}${routes.profile}`;
               router.push(newPath);
             }}
-          />
+          /> */}
 
           <div className="mt-12">
             {sideBarMenus?.map((item, index) => (
