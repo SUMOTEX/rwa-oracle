@@ -1,2 +1,5 @@
 /test-ledger
 /frontend/node_modules
+/oracle-frontend/.next
+/oracle-frontend/node_modules
+oracle-frontend/.next/cache/

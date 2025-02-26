@@ -50,6 +50,7 @@
 		"headlessui": "^0.0.0",
 		"intl-messageformat": "^10.5.0",
 		"jotai": "^2.9.1",
+		"lucide-react": "^0.475.0",
 		"next": "14.2.4",
 		"next-themes": "^0.2.1",
 		"prettier": "^3.3.3",
