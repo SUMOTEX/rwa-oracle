@@ -2,7 +2,6 @@
 
 import cn from '@/utils/cn';
 import Avatar from '@/components/ui/avatar';
-import TopPools from '@/components/ui/top-pools';
 import CoinSlider from '@/components/ui/coin-card';
 import TopupButton from '@/components/ui/topup-button';
 import VolumeChart from '@/components/ui/chats/volume-chart';
@@ -64,7 +63,6 @@ export default function ModernScreen() {
           )}
         >
           <OverviewChart />
-          <TopPools />
         </div>
       </div>
     </>

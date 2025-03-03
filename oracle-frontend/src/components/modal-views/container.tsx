@@ -21,18 +21,7 @@ const ProfileInfo = dynamic(
 const PreviewContent = dynamic(
   () => import('@/components/create-nft/nft-preview-content'),
 );
-const FundTransfer = dynamic(
-  () => import('@/components/trading-bot/modals/fund-transfer'),
-);
-const ProfitTransfer = dynamic(
-  () => import('@/components/trading-bot/modals/profit-transfer'),
-);
-const DCAOrderHistory = dynamic(
-  () => import('@/components/trading-bot/modals/dca-order-history'),
-);
-const DCAStepper = dynamic(
-  () => import('@/components/trading-bot/modals/dca-stepper'),
-);
+
 
 const CoinSelectView = dynamic(
   () => import('@/components/ui/coin-select-view'),
@@ -54,14 +43,6 @@ function renderModalContent(view: MODAL_VIEW | string, data?: any) {
       return <Followers />;
     case 'NFT_PREVIEW':
       return <PreviewContent />;
-    case 'FUND_TRANSFER_PREVIEW':
-      return <FundTransfer />;
-    case 'PROFIT_TRANSFER_PREVIEW':
-      return <ProfitTransfer />;
-    case 'DCA_ORDER_HISTORY':
-      return <DCAOrderHistory />;
-    case 'DCA_STEPPER':
-      return <DCAStepper />;
     case 'SWAP_COIN_SELECT':
       const handleSelectedCoin = data?.handleSelectedCoin;
       return (

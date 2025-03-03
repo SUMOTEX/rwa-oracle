@@ -4,7 +4,6 @@ import CoinSlider from '@/components/ui/coin-card-two';
 import OverviewChart from '@/components/ui/chats/overview-chart';
 import ComparisonChart from '@/components/ui/chats/retro-comparision-chart';
 // import VolumeChart from '@/components/ui/chats/volume-chart';
-import TopPools from '@/components/ui/top-pools';
 import TransactionTable from '@/components/transaction/transaction-table';
 import TopCurrencyTable from '@/components/top-currency/currency-table';
 import { coinSlideData } from '@/data/static/coin-slide-data';
@@ -61,7 +60,6 @@ export default function ClassicScreen() {
         </div>
         <div className="order-first mb-8 grid w-full grid-cols-1 gap-6 sm:mb-10 sm:grid-cols-2 lg:order-1 lg:mb-0 lg:flex lg:w-72 lg:flex-col 2xl:w-80 3xl:w-[358px]">
           <OverviewChart />
-          <TopPools />
         </div>
       </div>
     </>

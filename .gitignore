@@ -3,3 +3,4 @@
 /oracle-frontend/.next
 /oracle-frontend/node_modules
 oracle-frontend/.next/cache/
+oracle-frontend/out/

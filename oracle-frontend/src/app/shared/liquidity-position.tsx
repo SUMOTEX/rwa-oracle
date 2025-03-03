@@ -6,7 +6,6 @@ import Button from '@/components/ui/button';
 import TransactionInfo from '@/components/ui/transaction-info';
 import { ChevronDown } from '@/components/icons/chevron-down';
 import Alert from '@/components/ui/alert';
-import CurrencySwapIcons from '@/components/ui/currency-swap-icons';
 
 const LiquidityPositionPage = () => {
   let [isExpand, setIsExpand] = useState(false);
@@ -32,8 +31,6 @@ const LiquidityPositionPage = () => {
             className="flex h-16 w-full cursor-pointer items-center justify-between p-3"
             onClick={() => setIsExpand(!isExpand)}
           >
-            <CurrencySwapIcons from="BTC" to="ETH" />
-
             <span className="flex items-center text-sm text-gray-500 dark:text-gray-300">
               Manage
               <ChevronDown

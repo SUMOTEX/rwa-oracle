@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import ComparisonChart from '@/components/ui/chats/comparison-chart';
 import Avatar from '@/components/ui/avatar';
 import OverviewChart from '@/components/ui/chats/overview-chart';
-import TopPools from '@/components/ui/top-pools';
 import TransactionTable from '@/components/transaction/transaction-table';
 import WalletCard from '@/components/ui/wallet-card';
 import TransactCoin from '@/components/ui/transact-coin';
@@ -68,8 +67,6 @@ export default function MinimalScreen() {
 
           <div className="md:col-span-2 lg:col-span-6 lg:row-start-2 lg:row-end-3 xl:col-start-10 xl:col-end-13 xl:row-start-1 xl:row-end-2 2xl:col-start-10 2xl:col-end-13 2xl:row-start-1 2xl:row-end-2 3xl:col-span-3 3xl:row-start-1">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
-              <OverviewChart chartWrapperClass="h-[224px] lg:h-[214px] xl:h-[190px] 2xl:h-[214px] 3xl:h-[268px] 4xl:h-[352px]" />
-              <TopPools limit={limit} />
             </div>
           </div>
 

@@ -52,6 +52,7 @@ export default function Sidebar({ className }: { className?: string }) {
   });
 
   function isSubMenuActive(
+    // @ts-ignore
     submenu: Array<{ name: string; icon?: JSX.Element; href: string }>,
   ) {
     return submenu?.map((item) => item.href).includes(pathname);

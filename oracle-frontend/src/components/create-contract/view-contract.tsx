@@ -5,9 +5,16 @@ import { useAccount } from "wagmi";
 import Button from "@/components/ui/button";
 import { Loader2, Copy } from "lucide-react";
 
+interface Contract {
+    contract_address: string;
+    title: string;
+    subtitle: string;
+    min_verifiers: number;
+    reward_per_update: string;
+}
 export default function ViewCreatedContracts() {
     const { address, isConnected } = useAccount();
-    const [contracts, setContracts] = useState([]);
+    const [contracts, setContracts] = useState<Contract[]>([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -36,7 +43,7 @@ export default function ViewCreatedContracts() {
             } else {
                 setMessage("❌ No contracts found.");
             }
-        } catch (error) {
+        } catch (error:any) {
             setMessage(`❌ Error fetching contracts: ${error.message}`);
         } finally {
             setLoading(false);

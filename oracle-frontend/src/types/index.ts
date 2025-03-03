@@ -7,6 +7,7 @@ export type NextPageWithLayout<P = {}> = NextPage<P> & {
 };
 
 export type CoinTypes = {
+  // @ts-ignore
   icon: JSX.Element;
   code: string;
   name: string;

@@ -24,6 +24,7 @@ export default function CreateContract() {
     // Contract Settings
     const [minVerifiers, setMinVerifiers] = useState(3);
     const [rewardPerUpdate, setRewardPerUpdate] = useState("0.0000005");
+    const [apiURL, setApiURL]=useState('')
 
     // Smart Contract Deployment Function
     const deployContract = async () => {
@@ -40,7 +41,7 @@ export default function CreateContract() {
                 throw new Error("🚨 Wallet is not detected. Please install or enable it.");
             }
     
-            const ethereum = window.ethereum;
+            const ethereum = window.ethereum as any;
             await ethereum.request({ method: "eth_requestAccounts" });
     
             const provider = new ethers.BrowserProvider(ethereum);
@@ -65,7 +66,7 @@ export default function CreateContract() {
             setContractAddress(deployedAddress);
             setMessage(`✅ Contract Deployed Successfully at ${deployedAddress}`);
             await saveContractToBackend(deployedAddress, signer.address, minVerifiers.toString(), rewardPerUpdate);
-        } catch (error) {
+        } catch (error:any) {
             setMessage(`❌ Deployment Failed: ${error.message}`);
         } finally {
             setDeploying(false);
@@ -117,6 +118,11 @@ export default function CreateContract() {
                 <InputLabel title="Description" subTitle="Describe the contract functionality." />
                 <Textarea placeholder="Provide a detailed description of your contract" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>  
+              {/* GET API */}
+              <div className="mb-8">
+                <InputLabel title="API" subTitle="API URL for request" />
+                <Input type="text" value={apiURL} onChange={(e) => setApiURL((e.target.value))} />
+            </div>
             {/* Minimum Verifiers */}
             <div className="mb-8">
                 <InputLabel title="Minimum Verifier Approvals" subTitle="Number of approvals required for an update." />

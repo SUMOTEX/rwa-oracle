@@ -13,11 +13,11 @@ import { LockIcon } from '@/components/icons/lock-icon';
 import { TradingBotIcon } from '@/components/icons/trading-bot-icon';
 
 export const defaultMenuItems = [
-  {
-    name: 'Home',
-    icon: <HomeIcon />,
-    href: routes.home,
-  },
+  // {
+  //   name: 'Home',
+  //   icon: <HomeIcon />,
+  //   href: routes.home,
+  // },
   {
     name: 'Contract',
     icon: <CompassIcon />,
